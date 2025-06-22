@@ -3,110 +3,100 @@ export default {
   name: 'ModoCriptografia',
   data() {
     return {
-      animacoesCripto: [],
-      palavrasCripto: [],
-      palavraSecretaOriginal: '',       // palavra original normal
-      palavraCriptografada: '',          // palavra criptografada que o jogador tem que adivinhar
-      tentativasCripto: [],
-      inputAtualCripto: '',
-      maxTentativasCripto: 10,
-      maxLetrasCripto: 6,
-      jogoFinalizadoCripto: false,
-      mensagemCripto: '',
+      palavras: [],
+      palavraSecretaOriginal: '',
+      palavraSecreta: '',
+      palavraCriptografada: '',
+      tentativas: [],
+      inputAtual: '',
+      maxTentativas: 10,
+      maxLetras: 6,
+      jogoFinalizado: false,
+      mensagem: '',
+      animacoes: [],
       mapaCriptografia: {
-        a: '@', b: '8', c: '(', d: 'D', e: '3', f: '#', g: '9',
-        h: '#', i: '1', j: 'J', k: 'K', l: '1', m: 'M', n: 'N',
-        o: '0', p: 'P', q: 'Q', r: 'R', s: '$', t: '7', u: 'U',
-        v: 'V', w: 'W', x: 'X', y: 'Y', z: '2'
-      },
+        a: '@', b: '8', c: '(', d: '!', e: '3', f: '#', g: '9',
+        h: '#', i: '1', j: ',', k: '-', l: '%', m: '6', n: '4',
+        o: '0', p: '{', q: '.', r: '=', s: '$', t: '7', u: '5',
+        v: ';', w: '}', x: '/', y: '+', z: '2'
+      }
     }
   },
   async created() {
-    await this.carregarDicionarioCripto()
-    if (this.palavrasCripto.length) {
-      this.sortearPalavraCripto()
+    await this.carregarDicionario()
+    if (this.palavras.length) {
+      this.sortearPalavra()
     } else {
-      this.mensagemCripto = 'Nenhuma palavra disponível.'
+      this.mensagem = 'Nenhuma palavra disponível.'
     }
   },
-
   methods: {
-    async carregarDicionarioCripto() {
+    async carregarDicionario() {
       try {
-        const res = await fetch('/palavras6.json')
-        const lista = await res.json()
-        this.palavrasCripto = lista.filter(p => p.length === this.maxLetrasCripto)
+        const res = await fetch('/pt-br.json')
+        const listaCompleta = await res.json()
+        this.palavras = listaCompleta.filter(p => p.length === this.maxLetras)
       } catch (err) {
-        this.mensagemCripto = 'Erro ao carregar o dicionário.'
+        this.mensagem = 'Erro ao carregar o dicionário.'
         console.error(err)
       }
     },
-
-    sortearPalavraCripto() {
-      const aleatoria = this.palavrasCripto[Math.floor(Math.random() * this.palavrasCripto.length)]
+    sortearPalavra() {
+      const aleatoria = this.palavras[Math.floor(Math.random() * this.palavras.length)]
       this.palavraSecretaOriginal = aleatoria.toLowerCase()
-      this.palavraCriptografada = this.palavraSecretaOriginal
+      this.palavraSecreta = this.palavraSecretaOriginal
+      this.palavraCriptografada = this.palavraSecreta
         .split('')
         .map(letra => this.mapaCriptografia[letra] || letra)
         .join('')
     },
+    tentar() {
+      if (this.jogoFinalizado) return;
 
-    tentarCripto() {
-      if (this.jogoFinalizadoCripto) return
+      const chute = this.inputAtual;
 
-      const chute = this.inputAtualCripto.toUpperCase() // jogador digita a palavra criptografada
-
-      if (chute.length !== this.maxLetrasCripto) {
-        this.mensagemCripto = `Digite exatamente ${this.maxLetrasCripto} caracteres.`
-        return
+      if (chute.length !== this.maxLetras) {
+        this.mensagem = `Digite exatamente ${this.maxLetras} símbolos.`;
+        return;
       }
 
-      // Aqui a validação é feita contra a palavra criptografada
-      if (chute !== this.palavraCriptografada.toUpperCase()) {
-        this.mensagemCripto = 'Palavra incorreta.'
-        this.tentativasCripto.push(chute)
-        this.animacoesCripto.push(this.tentativasCripto.length - 1)
-        this.inputAtualCripto = ''
-        
-        if (this.tentativasCripto.length >= this.maxTentativasCripto) {
-          this.mensagemCripto = `Fim de jogo! A palavra correta era: ${this.palavraCriptografada.toUpperCase()}`
-          this.jogoFinalizadoCripto = true
-        }
-        return
-      }
+      this.tentativas.push(chute);
+      this.animacoes.push(this.tentativas.length - 1);
+      this.inputAtual = '';
 
-      // Se acertou
-      this.tentativasCripto.push(chute)
-      this.animacoesCripto.push(this.tentativasCripto.length - 1)
-      this.mensagemCripto = 'Parabéns! Você acertou a palavra criptografada!'
-      this.jogoFinalizadoCripto = true
-      this.inputAtualCripto = ''
-    },
-
-    corLetraCripto(letra, i, tentativaIndex) {
-      const chute = this.tentativasCripto[tentativaIndex]
-      if (!chute) return ''
-
-      if (letra === this.palavraCriptografada[i].toUpperCase()) {
-        return 'verde'
-      } else if (this.palavraCriptografada.includes(letra)) {
-        return 'amarelo'
+      if (chute === this.palavraCriptografada) {
+        this.mensagem = 'Parabéns! Você acertou a palavra criptografada!';
+        this.jogoFinalizado = true;
+      } else if (this.tentativas.length >= this.maxTentativas) {
+        this.mensagem = `Fim de jogo! A palavra era: ${this.palavraCriptografada}`;
+        this.jogoFinalizado = true;
       } else {
-        return 'semcor'
+        this.mensagem = 'Tente novamente.';
       }
     },
 
-    reiniciarJogoCripto() {
-      this.tentativasCripto = []
-      this.inputAtualCripto = ''
-      this.jogoFinalizadoCripto = false
-      this.mensagemCripto = ''
-      this.animacoesCripto = []
-      this.sortearPalavraCripto()
+    reiniciarJogo() {
+      this.tentativas = []
+      this.inputAtual = ''
+      this.jogoFinalizado = false
+      this.mensagem = ''
+      this.animacoes = []
+      this.sortearPalavra()
     },
-
-    voltarCripto() {
+    voltar() {
       this.$emit('voltarParaInicio')
+    },
+    corLetra(letra, i, tentativaIndex) {
+      const chute = this.tentativas[tentativaIndex];
+      if (!chute) return '';
+
+      if (letra === this.palavraCriptografada[i]) {
+        return 'verde';
+      } else if (this.palavraCriptografada.includes(letra)) {
+        return 'amarelo';
+      } else {
+        return 'semcor';
+      }
     }
   }
 }
@@ -114,49 +104,42 @@ export default {
 
 <template>
   <div class="d-flex flex-column align-items-center justify-content-center min-vh-100 bg-dark text-custom p-3">
-    <h2 class="mb-4">Modo Criptografia</h2>
+    <h2 class="text-degrade mb-4">Modo Criptografia</h2>
 
-    <p class="mensagem mb-3">
+    <p class="mensagem text-degrade mb-3">
       Palavra original: <strong>{{ palavraSecretaOriginal.toUpperCase() }}</strong>
     </p>
 
     <div class="grid-palavras d-flex flex-column gap-2 mb-3">
-      <div v-for="(chute, i) in tentativasCripto" :key="i" class="d-flex gap-2 justify-content-center">
+      <div v-for="(chute, i) in tentativas" :key="i" class="d-flex gap-2 justify-content-center">
         <div v-for="(letra, j) in chute" :key="j" class="bloco-letra"
-          :class="[corLetraCripto(letra, j, i), animacoesCripto.includes(i) ? 'animada' : '']">
+          :class="[corLetra(letra, j, i), animacoes.includes(i) ? 'animada' : '']">
           {{ letra }}
         </div>
       </div>
 
-      <div v-for="i in maxTentativasCripto - tentativasCripto.length" :key="'vazio' + i"
+      <div v-for="i in maxTentativas - tentativas.length" :key="'vazio' + i"
         class="d-flex gap-2 justify-content-center">
-        <div v-for="j in maxLetrasCripto" :key="j" class="bloco-letra">&nbsp;</div>
+        <div v-for="j in maxLetras" :key="j" class="bloco-letra">&nbsp;</div>
       </div>
     </div>
 
-    <input
-      v-model="inputAtualCripto"
-      :maxlength="maxLetrasCripto"
-      :disabled="jogoFinalizadoCripto"
-      @keyup.enter="tentarCripto"
-      class="input-palavra"
-      placeholder="Digite a palavra criptografada"
-      autofocus
-    />
+    <input v-model="inputAtual" :maxlength="maxLetras" :disabled="jogoFinalizado" @keyup.enter="tentar"
+      class="input-palavra text-degrade" placeholder="Digite a palavra original" autofocus />
 
-    <button @click="tentarCripto" :disabled="jogoFinalizadoCripto" class="btn btn-custom mt-3">
+    <button @click="tentar" :disabled="jogoFinalizado" class="btn btn-custom mt-3">
       Chutar
     </button>
 
-    <button @click="reiniciarJogoCripto" class="btn btn-custom mt-2">
+    <button @click="reiniciarJogo" class="btn btn-custom mt-2">
       Reiniciar
     </button>
 
-    <button @click="voltarCripto" class="btn btn-custom mt-2">
+    <button @click="voltar" class="btn btn-custom mt-2">
       Voltar
     </button>
 
-    <p class="mensagem mt-3">{{ mensagemCripto }}</p>
+    <p class="mensagem mt-3">{{ mensagem }}</p>
   </div>
 </template>
 
@@ -241,14 +224,27 @@ export default {
 }
 
 .btn-custom {
+  width: 250px;
   background-color: #2a2a2a;
-  color: #6e7c61;
   border: none;
   border-radius: 12px;
-  padding: 10px 25px;
+  padding: 12px 0;
   font-size: 1.3rem;
+  font-weight: bold;
+  text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  background-image: linear-gradient(90deg, #4caf50, #00bcd4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-degrade {
+  background-image: linear-gradient(90deg, #4caf50, #00bcd4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .btn-custom:hover:enabled {
