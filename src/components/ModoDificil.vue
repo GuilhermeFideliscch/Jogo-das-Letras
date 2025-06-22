@@ -18,12 +18,13 @@ export default {
   },
   async created() {
     await this.carregarDicionario()
-    if (this.palavras.length) {
+    if (this.palavras.length > 0) {
       this.sortearPalavra()
     } else {
       this.mensagem = 'Nenhuma palavra disponível.'
     }
   },
+
   methods: {
     async carregarDicionario() {
       try {
@@ -36,14 +37,28 @@ export default {
       }
     },
     sortearPalavra() {
-      const aleatoria = this.palavras[Math.floor(Math.random() * this.palavras.length)]
-      this.palavraSecreta = aleatoria.toLowerCase()
-      this.maxLetras = this.palavraSecreta.length
+      let aleatoria = ''
+      let tentativas = 0
+      do {
+        aleatoria = this.palavras[Math.floor(Math.random() * this.palavras.length)]?.toLowerCase() || ''
+        tentativas++
+        if (tentativas > 20) break
+      } while (!aleatoria || aleatoria.length < this.maxLetrasMin || aleatoria.length > this.maxLetrasMax)
+
+      if (!aleatoria) {
+        this.mensagem = 'Nenhuma palavra válida para sortear.'
+        this.jogoFinalizado = true
+        return
+      }
+
+      this.palavraSecreta = aleatoria
+      this.maxLetras = aleatoria.length
     },
+
     tentar() {
       if (this.jogoFinalizado) return;
 
-      const chute = this.inputAtual.toLowerCase();
+      const chute = this.inputAtual.trim().toLowerCase();
 
       if (chute.length !== this.maxLetras) {
         this.mensagem = `Digite exatamente ${this.maxLetras} letras.`;
@@ -69,7 +84,6 @@ export default {
         this.mensagem = '';
       }
     },
-
     reiniciarJogo() {
       this.tentativas = []
       this.inputAtual = ''
@@ -82,16 +96,40 @@ export default {
       this.$emit('voltarParaInicio')
     },
     corLetra(letra, i, tentativaIndex) {
-      const chute = this.tentativas[tentativaIndex]
-      if (!chute) return ''
+      const chute = this.tentativas[tentativaIndex];
+      if (!chute) return '';
 
-      if (letra === this.palavraSecreta[i]) {
-        return 'verde'
-      } else if (this.palavraSecreta.includes(letra)) {
-        return 'amarelo'
-      } else {
-        return 'semcor'
+      const palavra = this.palavraSecreta;
+      const letrasPalavra = {};
+      for (const l of palavra) {
+        letrasPalavra[l] = (letrasPalavra[l] || 0) + 1;
       }
+      const letrasVerdes = {};
+      for (let idx = 0; idx < chute.length; idx++) {
+        if (chute[idx] === palavra[idx]) {
+          letrasVerdes[chute[idx]] = (letrasVerdes[chute[idx]] || 0) + 1;
+        }
+      }
+      const restantes = {};
+      for (const l in letrasPalavra) {
+        restantes[l] = letrasPalavra[l] - (letrasVerdes[l] || 0);
+      }
+
+      if (letra === palavra[i]) {
+        return 'verde';
+      } else if (palavra.includes(letra)) {
+        let usadosAntes = 0;
+        for (let x = 0; x < i; x++) {
+          if (chute[x] === letra && chute[x] !== palavra[x]) {
+            usadosAntes++;
+          }
+        }
+        if (restantes[letra] > usadosAntes) {
+          return 'amarelo';
+        }
+      }
+
+      return 'semcor';
     }
   }
 }

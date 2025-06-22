@@ -14,13 +14,16 @@ export default {
       animacoes: [],
     }
   },
+
   async created() {
     await this.carregarDicionario()
-    if (this.palavras.length) {
+    if (this.palavras.length > 0) {
+      this.sortearPalavra()
     } else {
       this.mensagem = 'Nenhuma palavra disponível.'
     }
   },
+
   methods: {
     async carregarDicionario() {
       try {
@@ -32,10 +35,29 @@ export default {
         console.error(err)
       }
     },
+
     sortearPalavra() {
-      const aleatoria = this.palavras[Math.floor(Math.random() * this.palavras.length)]
-      this.palavraSecreta = aleatoria.toLowerCase()
+      if (!this.palavras.length) {
+        this.mensagem = 'Nenhuma palavra válida disponível para sortear.'
+        this.jogoFinalizado = true
+        return
+      }
+
+      let tentativa = ''
+      let tentativas = 0
+      do {
+        tentativa = this.palavras[Math.floor(Math.random() * this.palavras.length)]?.toLowerCase() || ''
+        tentativas++
+      } while (tentativa.trim() === '' && tentativas < 10)
+
+      if (tentativa.trim() === '') {
+        this.mensagem = 'Falha ao sortear palavra válida.'
+        this.jogoFinalizado = true
+      } else {
+        this.palavraSecreta = tentativa
+      }
     },
+
     tentar() {
       if (this.jogoFinalizado) return
 
@@ -79,15 +101,37 @@ export default {
     corLetra(letra, i, tentativaIndex) {
       const chute = this.tentativas[tentativaIndex]
       if (!chute) return ''
-
-      if (letra === this.palavraSecreta[i]) {
-        return 'verde'
-      } else if (this.palavraSecreta.includes(letra)) {
-        return 'amarelo'
-      } else {
-        return 'semcor'
+      const palavra = this.palavraSecreta
+      const letrasPalavra = {}
+      for (const l of palavra) {
+        letrasPalavra[l] = (letrasPalavra[l] || 0) + 1
       }
+      const letrasVerdes = {}
+      for (let idx = 0; idx < chute.length; idx++) {
+        if (chute[idx] === palavra[idx]) {
+          letrasVerdes[chute[idx]] = (letrasVerdes[chute[idx]] || 0) + 1
+        }
+      }
+      const restantes = {}
+      for (const l in letrasPalavra) {
+        restantes[l] = letrasPalavra[l] - (letrasVerdes[l] || 0)
+      }
+      if (letra === palavra[i]) {
+        return 'verde'
+      } else if (palavra.includes(letra)) {
+        let usadosAntes = 0
+        for (let x = 0; x < i; x++) {
+          if (chute[x] === letra && chute[x] !== palavra[x]) {
+            usadosAntes++
+          }
+        }
+        if (restantes[letra] > usadosAntes) {
+          return 'amarelo'
+        }
+      }
+      return 'semcor'
     }
+
   }
 }
 </script>

@@ -24,7 +24,7 @@ export default {
   },
   async created() {
     await this.carregarDicionario()
-    if (this.palavras.length) {
+    if (this.palavras.length > 0) {
       this.sortearPalavra()
     } else {
       this.mensagem = 'Nenhuma palavra disponível.'
@@ -42,7 +42,30 @@ export default {
       }
     },
     sortearPalavra() {
-      const aleatoria = this.palavras[Math.floor(Math.random() * this.palavras.length)]
+      if (!this.palavras.length) {
+        this.palavraSecretaOriginal = ''
+        this.palavraSecreta = ''
+        this.palavraCriptografada = ''
+        return
+      }
+      let aleatoria = ''
+      const maxTentativas = 20
+      let tentativas = 0
+
+      do {
+        aleatoria = this.palavras[Math.floor(Math.random() * this.palavras.length)] || ''
+        tentativas++
+        if (tentativas > maxTentativas) break
+      } while (!aleatoria || aleatoria.length !== this.maxLetras)
+
+      if (!aleatoria || aleatoria.length !== this.maxLetras) {
+        this.mensagem = 'Não foi possível sortear uma palavra válida.'
+        this.palavraSecretaOriginal = ''
+        this.palavraSecreta = ''
+        this.palavraCriptografada = ''
+        return
+      }
+
       this.palavraSecretaOriginal = aleatoria.toLowerCase()
       this.palavraSecreta = this.palavraSecretaOriginal
       this.palavraCriptografada = this.palavraSecreta
@@ -51,30 +74,29 @@ export default {
         .join('')
     },
     tentar() {
-      if (this.jogoFinalizado) return;
+      if (this.jogoFinalizado) return
 
-      const chute = this.inputAtual;
+      const chute = this.inputAtual
 
       if (chute.length !== this.maxLetras) {
-        this.mensagem = `Digite exatamente ${this.maxLetras} símbolos.`;
-        return;
+        this.mensagem = `Digite exatamente ${this.maxLetras} símbolos.`
+        return
       }
 
-      this.tentativas.push(chute);
-      this.animacoes.push(this.tentativas.length - 1);
-      this.inputAtual = '';
+      this.tentativas.push(chute)
+      this.animacoes.push(this.tentativas.length - 1)
+      this.inputAtual = ''
 
       if (chute === this.palavraCriptografada) {
-        this.mensagem = 'Parabéns! Você acertou a palavra criptografada!';
-        this.jogoFinalizado = true;
+        this.mensagem = 'Parabéns! Você acertou a palavra criptografada!'
+        this.jogoFinalizado = true
       } else if (this.tentativas.length >= this.maxTentativas) {
-        this.mensagem = `Fim de jogo! A palavra era: ${this.palavraCriptografada}`;
-        this.jogoFinalizado = true;
+        this.mensagem = `Fim de jogo! A palavra era: ${this.palavraCriptografada}`
+        this.jogoFinalizado = true
       } else {
-        this.mensagem = 'Tente novamente.';
+        this.mensagem = 'Tente novamente.'
       }
     },
-
     reiniciarJogo() {
       this.tentativas = []
       this.inputAtual = ''
@@ -89,18 +111,42 @@ export default {
     corLetra(letra, i, tentativaIndex) {
       const chute = this.tentativas[tentativaIndex];
       if (!chute) return '';
-
-      if (letra === this.palavraCriptografada[i]) {
-        return 'verde';
-      } else if (this.palavraCriptografada.includes(letra)) {
-        return 'amarelo';
-      } else {
-        return 'semcor';
+      const palavra = this.palavraCriptografada;
+      const letrasPalavra = {};
+      for (const l of palavra) {
+        letrasPalavra[l] = (letrasPalavra[l] || 0) + 1;
       }
+      const letrasVerdes = {};
+      for (let idx = 0; idx < chute.length; idx++) {
+        if (chute[idx] === palavra[idx]) {
+          letrasVerdes[chute[idx]] = (letrasVerdes[chute[idx]] || 0) + 1;
+        }
+      }
+      const restantes = {};
+      for (const l in letrasPalavra) {
+        restantes[l] = letrasPalavra[l] - (letrasVerdes[l] || 0);
+      }
+
+      if (letra === palavra[i]) {
+        return 'verde';
+      } else if (palavra.includes(letra)) {
+        let usadosAntes = 0;
+        for (let x = 0; x < i; x++) {
+          if (chute[x] === letra && chute[x] !== palavra[x]) {
+            usadosAntes++;
+          }
+        }
+        if (restantes[letra] > usadosAntes) {
+          return 'amarelo';
+        }
+      }
+
+      return 'semcor';
     }
   }
 }
 </script>
+
 
 <template>
   <div class="d-flex flex-column align-items-center justify-content-center min-vh-100 bg-dark text-custom p-3">
