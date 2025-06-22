@@ -14,6 +14,7 @@ export default {
       jogoFinalizado: false,
       mensagem: '',
       animacoes: [],
+      erroInput: false,
     }
   },
   async created() {
@@ -56,32 +57,31 @@ export default {
     },
 
     tentar() {
-      if (this.jogoFinalizado) return;
+      if (this.jogoFinalizado) return
 
-      const chute = this.inputAtual.trim().toLowerCase();
+      const chute = this.inputAtual.trim().toLowerCase()
 
-      if (chute.length !== this.maxLetras) {
-        this.mensagem = `Digite exatamente ${this.maxLetras} letras.`;
-        return;
+      if (chute.length !== this.maxLetras || !this.palavras.includes(chute)) {
+        this.mensagem = chute.length !== this.maxLetras
+          ? `Digite exatamente ${this.maxLetras} letras.`
+          : 'Palavra inválida.'
+
+        this.erroInput = true
+        setTimeout(() => this.erroInput = false, 600)
+        return
       }
 
-      if (!this.palavras.includes(chute)) {
-        this.mensagem = 'Palavra inválida.';
-        return;
-      }
-
-      this.tentativas.push(chute);
-      this.animacoes.push(this.tentativas.length - 1);
-      this.inputAtual = '';
+      this.tentativas.push(chute)
+      this.animacoes.push(this.tentativas.length - 1)
+      this.inputAtual = ''
+      this.mensagem = ''
 
       if (chute === this.palavraSecreta) {
-        this.mensagem = 'Parabéns! Você acertou a palavra!';
-        this.jogoFinalizado = true;
+        this.mensagem = 'Parabéns! Você acertou a palavra!'
+        this.jogoFinalizado = true
       } else if (this.tentativas.length >= this.maxTentativas) {
-        this.mensagem = `Fim de jogo! A palavra era: ${this.palavraSecreta.toUpperCase()}`;
-        this.jogoFinalizado = true;
-      } else {
-        this.mensagem = '';
+        this.mensagem = `Fim de jogo! A palavra era: ${this.palavraSecreta.toUpperCase()}`
+        this.jogoFinalizado = true
       }
     },
     reiniciarJogo() {
@@ -149,14 +149,19 @@ export default {
 
       <div v-for="i in maxTentativas - tentativas.length" :key="'vazio' + i"
         class="d-flex gap-2 justify-content-center flex-wrap">
-        <div v-for="j in maxLetras" :key="j" class="bloco-letra">
-          &nbsp;
-        </div>
+        <div v-for="j in maxLetras" :key="j" class="bloco-letra">&nbsp;</div>
       </div>
     </div>
 
-    <input v-model="inputAtual" :maxlength="maxLetras" :disabled="jogoFinalizado" @keyup.enter="tentar"
-      class="input-palavra text-degrade" :placeholder="`Digite uma palavra de ${maxLetras} letras`" autofocus />
+    <input
+      v-model="inputAtual"
+      :maxlength="maxLetras"
+      :disabled="jogoFinalizado"
+      @keyup.enter="tentar"
+      :class="['input-palavra', 'text-degrade', { 'erro-input': erroInput }]"
+      :placeholder="`Digite uma palavra de ${maxLetras} letras`"
+      autofocus
+    />
 
     <button @click="tentar" :disabled="jogoFinalizado" class="btn btn-custom mt-3">Chutar</button>
     <button @click="reiniciarJogo" class="btn btn-custom mt-2">Reiniciar</button>
@@ -181,6 +186,17 @@ export default {
     transform: rotateX(0deg);
     opacity: 1;
   }
+}
+
+@keyframes tremor {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.erro-input {
+  border-color: #e74c3c !important;
+  animation: tremor 0.3s ease;
 }
 
 .animada {
@@ -239,6 +255,7 @@ export default {
   background-color: #1f1f1f;
   color: #6e7c61;
   outline: none;
+  transition: border 0.3s ease;
 }
 
 .input-palavra:focus {

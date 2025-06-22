@@ -14,6 +14,7 @@ export default {
       jogoFinalizado: false,
       mensagem: '',
       animacoes: [],
+      erroInput: false,
       mapaCriptografia: {
         a: '@', b: '8', c: '(', d: '!', e: '3', f: '#', g: '9',
         h: '#', i: '1', j: ',', k: '-', l: '%', m: '6', n: '4',
@@ -48,6 +49,7 @@ export default {
         this.palavraCriptografada = ''
         return
       }
+
       let aleatoria = ''
       const maxTentativas = 20
       let tentativas = 0
@@ -80,12 +82,16 @@ export default {
 
       if (chute.length !== this.maxLetras) {
         this.mensagem = `Digite exatamente ${this.maxLetras} símbolos.`
+        this.erroInput = true
+        setTimeout(() => this.erroInput = false, 600)
         return
       }
 
       this.tentativas.push(chute)
       this.animacoes.push(this.tentativas.length - 1)
       this.inputAtual = ''
+      this.mensagem = ''
+      this.erroInput = false
 
       if (chute === this.palavraCriptografada) {
         this.mensagem = 'Parabéns! Você acertou a palavra criptografada!'
@@ -147,7 +153,6 @@ export default {
 }
 </script>
 
-
 <template>
   <div class="d-flex flex-column align-items-center justify-content-center min-vh-100 bg-dark text-custom p-3">
     <h2 class="text-degrade mb-4">Modo Criptografia</h2>
@@ -170,20 +175,19 @@ export default {
       </div>
     </div>
 
-    <input v-model="inputAtual" :maxlength="maxLetras" :disabled="jogoFinalizado" @keyup.enter="tentar"
-      class="input-palavra text-degrade" placeholder="Digite a palavra original" autofocus />
+    <input
+      v-model="inputAtual"
+      :maxlength="maxLetras"
+      :disabled="jogoFinalizado"
+      @keyup.enter="tentar"
+      :class="['input-palavra', 'text-degrade', { 'erro-input': erroInput }]"
+      placeholder="Digite a palavra original"
+      autofocus
+    />
 
-    <button @click="tentar" :disabled="jogoFinalizado" class="btn btn-custom mt-3">
-      Chutar
-    </button>
-
-    <button @click="reiniciarJogo" class="btn btn-custom mt-2">
-      Reiniciar
-    </button>
-
-    <button @click="voltar" class="btn btn-custom mt-2">
-      Voltar
-    </button>
+    <button @click="tentar" :disabled="jogoFinalizado" class="btn btn-custom mt-3">Chutar</button>
+    <button @click="reiniciarJogo" class="btn btn-custom mt-2">Reiniciar</button>
+    <button @click="voltar" class="btn btn-custom mt-2">Voltar</button>
 
     <p class="mensagem mt-3">{{ mensagem }}</p>
   </div>
@@ -191,19 +195,20 @@ export default {
 
 <style scoped>
 @keyframes flipar {
-  0% {
-    transform: rotateX(0deg);
-  }
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(90deg); opacity: 0.3; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
 
-  50% {
-    transform: rotateX(90deg);
-    opacity: 0.3;
-  }
+@keyframes tremor {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
 
-  100% {
-    transform: rotateX(0deg);
-    opacity: 1;
-  }
+.erro-input {
+  border-color: #e74c3c !important;
+  animation: tremor 0.3s ease;
 }
 
 .animada {
@@ -286,13 +291,6 @@ export default {
   background-clip: text;
 }
 
-.text-degrade {
-  background-image: linear-gradient(90deg, #4caf50, #00bcd4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .btn-custom:hover:enabled {
   background-color: #3a3a3a;
   transform: scale(1.05);
@@ -301,6 +299,13 @@ export default {
 .btn-custom:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.text-degrade {
+  background-image: linear-gradient(90deg, #4caf50, #00bcd4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .mensagem {

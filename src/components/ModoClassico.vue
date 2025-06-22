@@ -12,6 +12,7 @@ export default {
       jogoFinalizado: false,
       mensagem: '',
       animacoes: [],
+      erroInput: false,
     }
   },
 
@@ -65,11 +66,15 @@ export default {
 
       if (chute.length !== this.maxLetras) {
         this.mensagem = `Digite exatamente ${this.maxLetras} letras.`
+        this.erroInput = true
+        this.resetarErroInput()
         return
       }
 
       if (!this.palavras.includes(chute)) {
         this.mensagem = 'Palavra inválida.'
+        this.erroInput = true
+        this.resetarErroInput()
         return
       }
 
@@ -87,6 +92,13 @@ export default {
         this.mensagem = ''
       }
     },
+
+    resetarErroInput() {
+      setTimeout(() => {
+        this.erroInput = false
+      }, 500)
+    },
+
     reiniciarJogo() {
       this.tentativas = []
       this.inputAtual = ''
@@ -95,9 +107,11 @@ export default {
       this.animacoes = []
       this.sortearPalavra()
     },
+
     voltar() {
       this.$emit('voltarParaInicio')
     },
+
     corLetra(letra, i, tentativaIndex) {
       const chute = this.tentativas[tentativaIndex]
       if (!chute) return ''
@@ -131,7 +145,6 @@ export default {
       }
       return 'semcor'
     }
-
   }
 }
 </script>
@@ -154,8 +167,15 @@ export default {
       </div>
     </div>
 
-    <input v-model="inputAtual" :maxlength="maxLetras" :disabled="jogoFinalizado" @keyup.enter="tentar"
-      class="input-palavra text-degrade" placeholder="Digite sua palavra" autofocus />
+    <input v-model="inputAtual"
+      :maxlength="maxLetras"
+      :disabled="jogoFinalizado"
+      @keyup.enter="tentar"
+      class="input-palavra text-degrade"
+      :class="{ erro: erroInput }"
+      placeholder="Digite sua palavra"
+      autofocus
+    />
 
     <button @click="tentar" :disabled="jogoFinalizado" class="btn btn-custom mt-3">Chutar</button>
     <button @click="reiniciarJogo" class="btn btn-custom mt-2">Reiniciar</button>
@@ -180,6 +200,14 @@ export default {
     transform: rotateX(0deg);
     opacity: 1;
   }
+}
+
+@keyframes tremor {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
 }
 
 .animada {
@@ -239,10 +267,16 @@ export default {
   color: #6e7c61;
   outline: none;
   text-transform: lowercase;
+  transition: border-color 0.3s ease;
 }
 
 .input-palavra:focus {
   border-color: #4caf50;
+}
+
+.input-palavra.erro {
+  border-color: red !important;
+  animation: tremor 0.3s ease;
 }
 
 .btn-custom {
